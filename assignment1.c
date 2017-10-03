@@ -72,29 +72,31 @@ void openFile(char fileName[]){
 
 	if(file){
 
-		char *token;
-		char str[128], delim=" ";
+		char str[128];
+		const char delim[2]=" ";
 
-		//int points[][2];
-		int num_pt, max_x, max_y, mode=0;
+		int num_pt, max_x, max_y, mode=0, point=0;
+		
+		int *points;
 
 		while(fgets(str, sizeof(str), file) != NULL){
 			if(strncmp(str,"#",1) == 0)
 				 continue;
 
-			printf("%s", str);
-
-			if(mode==0){
-				printf("test2");
-				token = strtok(str, delim);
-				printf("test3");
-				printf("x: %s  ", token);
-				token = strtok(NULL, delim);
-				printf("y: %s\n", token);
+			if(mode == 0){
+				max_x = atoi(strtok(str, delim));
+				max_y = atoi(strtok(NULL,delim));
 				mode++;
 			}else if(mode == 1){
+				num_pt = atoi(strtok(str,delim)); 
 				mode++;
-			}else{}
+				points = (int *)malloc(num_pt*sizeof(int)); 
+			}else {			
+				*(points+point  ) = atoi(strtok(str, delim));
+				*(points+point+1) = atoi(strtok(NULL,delim));
+				point+=2;
+				printf("X:%i Y:%i\n", &(points+point), &(points+point+1));
+			}
 		}
 	} else printf("Error in reading the instance file!\n");
 
@@ -113,7 +115,7 @@ void saveFile(char fileName[]){
 -prints generation progress
 */
 void generateInstances(){
-	int max_x, max_y, num_pt, inst_ammount;;	
+	int max_x, max_y, num_pt, inst_ammount;
 
 	printf("Generating random instances\n");
 	printf("Enter the circuit board size MAX_X MAX_Y: ");
