@@ -13,31 +13,32 @@ int checkCorrectness(int inst_x, int inst_y);
 int inRange(int val, int min, int max);
 int contains(int array[][2], int x, int y);
 void printValidOptions();
-void openFile(char fileName[]);
+void openFile(char fileName[], bool print);
 void saveFile(char fileName[]);
 void generateInstances();
 
+struct Instance{
+	int max_x, max_y, num_pt, *points;
+};
+
 int main(int argc, char *argv[]){
 
-	if(argc==3 || argc==5){
-
-		if(strcmp(argv[1],"-i") == 0){
-			openFile(argv[2]);
-			if(argc==5 && strcmp(argv[3],"-o")==0){
-				saveFile(argv[4]);
-			}
-
-		}else if(strcmp(argv[1],"-o") == 0){
-			if(argc==3)
-				generateInstances();
-			else if(strcmp(argv[3],"-i") == 0){
-				openFile(argv[2]);
-			}
-			saveFile(argv[4]);
-
+//check if 5 arguemtns, take either i or o first
+//else if only three check if its i and not o
+//else if only 1 generate nd print to screen
+//else print valid options
+	if(argc==5){
+		if(strcmp(argv[1],"-i")==0 && strcmp(argv[3], "-o")==0){
+			openFile(argv[2], false);
+		}else if(strcmp(argv[1],"-o")==0 && strcmp(argv[3],"-i")==0){
+			openFile(argv[4], false);
 		}else printValidOptions();
-
+	}else if (argc==3 && strcmp(argv[1],"-i")==0){
+		openFile(argv[2], true);
+	}else if(argc==1){
+		//gnerate and print to screen
 	}else printValidOptions();
+	
 
 	return 0;
 }
@@ -66,7 +67,7 @@ void printValidOptions(){
 	printf("%s [-i inputfile [-o outputfile]]\n",PROGNAME);
 }
 
-void openFile(char fileName[]){
+void openFile(char fileName[], bool print){
 	
 	FILE *file = fopen(fileName,"r");
 
@@ -77,33 +78,36 @@ void openFile(char fileName[]){
 
 		int num_pt, max_x, max_y, mode=0, point=0;
 		
+		Instance instance; //Unknown type?
 		int *points;
-
+	
 		while(fgets(str, sizeof(str), file) != NULL){
 			if(strncmp(str,"#",1) == 0)
 				 continue;
 
 			if(mode == 0){
-				max_x = atoi(strtok(str, delim));
+				instance->max_x = atoi(strtok(str, delim));
 				max_y = atoi(strtok(NULL,delim));
+				if(print)printf("%d %d\n", instance->max_x, max_y);
 				mode++;
 			}else if(mode == 1){
-				num_pt = atoi(strtok(str,delim)); 
+				num_pt = atoi(strtok(str,delim));
+				if(print)printf("%d\n", num_pt);
 				mode++;
-				points = (int *)malloc(num_pt*sizeof(int)); 
+				points = (int *)malloc(2*num_pt*sizeof(int)); 
 			}else {			
 				*(points+point  ) = atoi(strtok(str, delim));
 				*(points+point+1) = atoi(strtok(NULL,delim));
+				if(print)printf("%d %d\n", *(points+point), *(points+point+1));
 				point+=2;
-				printf("X:%i Y:%i\n", &(points+point), &(points+point+1));
 			}
 		}
 	} else printf("Error in reading the instance file!\n");
-
+			//Perhaps add proper error handlng later?
 }
 
 void saveFile(char fileName[]){
-	
+	FILE *file = fopen(fileName,"w");//double check	
 }
 
 
@@ -119,11 +123,11 @@ void generateInstances(){
 
 	printf("Generating random instances\n");
 	printf("Enter the circuit board size MAX_X MAX_Y: ");
-	scanf("%i %i", &max_x, &max_y );
+	scanf("%d %d", &max_x, &max_y );
 	printf("Enter the number of points NUM_PT: ");
-	scanf("%i", &num_pt);
+	scanf("%d", &num_pt);
 	printf("Enter the number of random instances to be generated: ");
-	scanf("%i", &inst_ammount);
+	scanf("%d", &inst_ammount);
 
 	if(max_x * max_y <num_pt)
 		printf("Error in generating instances!\n");
@@ -143,9 +147,10 @@ void generateInstances(){
 				points[p][1] = y_cord;
 			
 			}
-			saveFile(points);
-			printf("instance%i_%i.txt generated", num_pt, j+1 );;
+			//saveFile(saveFileLocation);
+			printf("instance%d_%d.txt generated", num_pt, j+1 );;
 			if(j!=inst_ammount-1) printf("\n");
+			
 
 		}
 		printf(" ... done!\n");
