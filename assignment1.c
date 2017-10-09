@@ -13,9 +13,7 @@ struct Instance{
 	int x, y, num_pt, *points;
 }instance;
 
-
-int checkCorrectness(int inst_x, int inst_y);
-int inRange(int val, int min, int max);
+int inRange(int val, int max);
 int contains(struct Instance instance, int x, int y);
 void printValidOptions();
 int  openFile(char fileName[], bool print);
@@ -23,37 +21,33 @@ void saveFile(char fileName[]);
 void generateInstances();
 void printInstance(struct Instance instance);
 
-
 int main(int argc, char *argv[]){
 
 	if(argc==5){
 		if(strcmp(argv[1],"-i")==0 && strcmp(argv[3], "-o")==0){
-			openFile(argv[2], false);
+			if(openFile(argv[2], false))
+				saveFile(argv[4]);
+			else return 1;
 		}else if(strcmp(argv[1],"-o")==0 && strcmp(argv[3],"-i")==0){
-			openFile(argv[4], false);
+			if(openFile(argv[4], false))
+				saveFile(argv[2]);
+			else return 0;
 		}else printValidOptions();
 
 	}else if (argc==3 && strcmp(argv[1],"-i")==0){
-		openFile(argv[2], true);
-
+		if(!openFile(argv[2], true))
+			return 1;
 	}else if(argc==1){
 		 generateInstances();
 
 	}else printValidOptions();
 	
-
 	return 0;
 }
-
-int checkCorrectness(int inst_x, int inst_y){
 	
-	return true;
-
-}
-
 // Checks if a value is within a given range
-int inRange(int val, int min, int max){
-	return val > min || val < max;
+int inRange(int val, int max){
+		return val >= MIN_X && val <= max;
 }
 
 // Checks if given array contains a point
@@ -83,46 +77,62 @@ void printInstance(struct Instance instance){
 }
 
 int openFile(char fileName[], bool print){
-
-	bool error= false;	
+	
 	FILE *file = fopen(fileName,"r");
 	
 	if(file){
 
 		char str[128];
 		const char delim[2]="\t";
-		int mode=0, point=0, num_pt=0;
+		int mode=0, point=0, num_pt=0, temp_x, temp_y;
 		
 		while(fgets(str, sizeof(str), file) != NULL){
 			
 			if(strncmp(str,"#",1) == 0)
 				 continue;
 
-			if(mode == 0){	
+			if(mode == 0){
+				if(strchr(str,'\t')==NULL)goto errorCall;
 				instance.x = atoi(strtok(str, delim));
+				if(instance.x <=0) goto errorCall;
 				instance.y = atoi(strtok(NULL,delim));
+				if(instance.y <=0) goto errorCall;
 				mode++;
 			}else if(mode == 1){
 				instance.num_pt = atoi(strtok(str,delim));
 				mode++;
 				instance.points = (int *)malloc(2*instance.num_pt*sizeof(int)); 
 			}else {
-				//use contains method to check for duplicates!!!
-				*(instance.points+point  ) = atoi(strtok(str, delim));
-				*(instance.points+point+1) = atoi(strtok(NULL,delim));
+				
+				temp_x = atoi(strtok(str, delim));
+				temp_y = atoi(strtok(NULL,delim));
+
+				if(contains(instance, temp_x, temp_y))
+					goto errorCall;
+
+				*(instance.points+point  ) = temp_x;
+				*(instance.points+point+1) = temp_y;
+
+				if(!inRange(*(instance.points+point),instance.x))
+					goto errorCall;
+				if(!inRange(*(instance.points+point+0),instance.y))
+					goto errorCall;
+
 				num_pt++;
 				if(num_pt>instance.num_pt)break;
 				point+=2;
 			}
 		}
-		if(num_pt != instance.num_pt) error = true;
-		if(!error && print) printInstance(instance);
+		if(num_pt != instance.num_pt)goto errorCall;
+		if(print) printInstance(instance);
 
-	} else error = true;
+	} else goto errorCall;
 
-	if(error) printf("Error in reading the instance file!\n");
-	
-	return !error;	
+	return true;
+
+	errorCall:
+		printf("Error in reading the instance file!\n");
+		return false;	
 }
 
 void saveFile(char fileName[]){
@@ -156,7 +166,9 @@ void generateInstances(){;
 	printf("Enter the number of random instances to be generated: ");
 	scanf("%d", &inst_ammount);
 
-	if(instance.x * instance.y < instance.num_pt)
+	if(instance.x * instance.y < instance.num_pt
+		|| instance.x<=MIN_X  || instance.y<=MIN_Y
+		|| instance.num_pt<=0 || inst_ammount<=0)
 		printf("Error in generating instances!\n");
 	else {
 		instance.points = (int *)malloc(2*instance.num_pt*sizeof(int));
