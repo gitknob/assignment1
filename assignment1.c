@@ -16,9 +16,9 @@ struct Instance{
 
 int checkCorrectness(int inst_x, int inst_y);
 int inRange(int val, int min, int max);
-int contains(int array[], int x, int y);
+int contains(struct Instance instance, int x, int y);
 void printValidOptions();
-void openFile(char fileName[], bool print);
+int  openFile(char fileName[], bool print);
 void saveFile(char fileName[]);
 void generateInstances();
 void printInstance(struct Instance instance);
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]){
 }
 
 int checkCorrectness(int inst_x, int inst_y){
-
+	
 	return true;
 
 }
@@ -57,10 +57,12 @@ int inRange(int val, int min, int max){
 }
 
 // Checks if given array contains a point
-int contains(int array[], int x, int y){
-	for(int p=0; p<sizeof(array)/sizeof(int); p+=2 )
-		if(array[p]==x && array[p+1]==y)
+int contains(struct Instance instance, int x, int y){
+	
+	for(int point=0; point<instance.num_pt*2; point+=2 ){
+		if(*(instance.points+point)==x && *(instance.points+point+1)==y)
 			return true;
+	}
 	return false;
 }
 
@@ -71,34 +73,32 @@ void printValidOptions(){
 
 //Prints the instance information
 void printInstance(struct Instance instance){
-	printf("%d %d\n", instance.x, instance.y);
+	printf("%d\t%d\n", instance.x, instance.y);
 	printf("%d\n", instance.num_pt);
 
-	for(int point=0; point<instance.num_pt*2; point+=2){
-		//why is this giving segmentation error?
-		//works when reading an existing file,
-		//why not when creating?	
-		printf("%d %d\n", *(instance.points+point), *(instance.points+point+1));
+	for(int point=0; point<instance.num_pt*2; point+=2){	
+		printf("%d\t%d\n", *(instance.points+point), *(instance.points+point+1));
 	}
 
 }
 
-void openFile(char fileName[], bool print){
-	
-	FILE *file = fopen(fileName,"r");
+int openFile(char fileName[], bool print){
 
+	bool error= false;	
+	FILE *file = fopen(fileName,"r");
+	
 	if(file){
 
 		char str[128];
-		const char delim[2]=" ";
-
-		int mode=0, point=0;
+		const char delim[2]="\t";
+		int mode=0, point=0, num_pt=0;
 		
 		while(fgets(str, sizeof(str), file) != NULL){
+			
 			if(strncmp(str,"#",1) == 0)
 				 continue;
 
-			if(mode == 0){
+			if(mode == 0){	
 				instance.x = atoi(strtok(str, delim));
 				instance.y = atoi(strtok(NULL,delim));
 				mode++;
@@ -106,23 +106,34 @@ void openFile(char fileName[], bool print){
 				instance.num_pt = atoi(strtok(str,delim));
 				mode++;
 				instance.points = (int *)malloc(2*instance.num_pt*sizeof(int)); 
-			}else {			
+			}else {
+				//use contains method to check for duplicates!!!
 				*(instance.points+point  ) = atoi(strtok(str, delim));
 				*(instance.points+point+1) = atoi(strtok(NULL,delim));
+				num_pt++;
+				if(num_pt>instance.num_pt)break;
 				point+=2;
-				//printf("%d %d\n", *(instance.points+point), *(instance.points+point+1));
 			}
 		}
+		if(num_pt != instance.num_pt) error = true;
+		if(!error && print) printInstance(instance);
 
-		if(print) printInstance(instance);
+	} else error = true;
 
-		return instance;
-	} else printf("Error in reading the instance file!\n");
-		//Perhaps add proper error handlng later?
+	if(error) printf("Error in reading the instance file!\n");
+	
+	return !error;	
 }
 
 void saveFile(char fileName[]){
-	FILE *file = fopen(fileName,"w");//double check	
+	FILE *file = fopen(fileName,"w");
+	fprintf(file,"%d\t%d\n", instance.x, instance.y);
+	fprintf(file,"%d\n",instance.num_pt);
+	
+	for(int point=0; point<instance.num_pt*2; point+=2){
+		fprintf(file,"%d\t%d\n", *(instance.points+point), *(instance.points+point+1));
+	}
+	close(file);
 }
 
 
@@ -136,7 +147,7 @@ void saveFile(char fileName[]){
 void generateInstances(){;
 	
 	int inst_ammount;
-
+	char fileName[128];
 	printf("Generating random instances\n");
 	printf("Enter the circuit board size MAX_X MAX_Y: ");
 	scanf("%d %d", &instance.x, &instance.y);
@@ -148,23 +159,23 @@ void generateInstances(){;
 	if(instance.x * instance.y < instance.num_pt)
 		printf("Error in generating instances!\n");
 	else {
-
+		instance.points = (int *)malloc(2*instance.num_pt*sizeof(int));
+		srand(time(NULL));
 		for(int j=0; j<inst_ammount; j++){
-
-			for(int point=0, x_cord, y_cord; point<instance.num_pt; point+=2){
-					do{
+			for(int point=0, x_cord, y_cord; point<instance.num_pt*2; point+=2){
+				do{
 					x_cord = rand() % instance.x-1 + MIN_X;
 					y_cord = rand() % instance.y-1 + MIN_Y;
-				}while( contains(points, x_cord, y_cord) );
-				// CHange containment check?
-				//why exactly does this not work here?			
+				}while( contains(instance, x_cord, y_cord) );	
 				*(instance.points+point  ) = x_cord;
 				*(instance.points+point+1) = y_cord;
 			
 			}
-			//saveFile(saveFileLocation);
-			printInstance(instance);
-			printf("instance%d_%d.txt generated", instance.num_pt, j+1 );;
+
+			sprintf(fileName, "instance%d_%03d.txt",instance.num_pt, j+1);
+			saveFile(fileName);
+			printf(fileName);
+			printf(" generated");
 			if(j!=inst_ammount-1) printf("\n");
 			
 		}
