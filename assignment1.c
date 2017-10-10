@@ -83,7 +83,7 @@ int openFile(char fileName[], bool print){
 	if(file){
 
 		char str[128];
-		const char delim[2]="\t";
+		char delim[2]="\t";
 		int mode=0, point=0, num_pt=0, temp_x, temp_y;
 		
 		while(fgets(str, sizeof(str), file) != NULL){
@@ -92,18 +92,26 @@ int openFile(char fileName[], bool print){
 				 continue;
 
 			if(mode == 0){
-				if(strchr(str,'\t')==NULL)goto errorCall;
+				if(strchr(str,'\t')==NULL){
+					delim[0] = ' ';
+					delim[1] = ' ';
+				}
 				instance.x = atoi(strtok(str, delim));
 				if(instance.x <=0) goto errorCall;
 				instance.y = atoi(strtok(NULL,delim));
 				if(instance.y <=0) goto errorCall;
 				mode++;
 			}else if(mode == 1){
+				delim[0] = '\t';
+				delim[1] = ' ';
 				instance.num_pt = atoi(strtok(str,delim));
 				mode++;
 				instance.points = (int *)malloc(2*instance.num_pt*sizeof(int)); 
 			}else {
-				
+				if(strchr(str,'\t')==NULL){
+					delim[0] = ' ';
+					delim[1] = ' ';
+				}
 				temp_x = atoi(strtok(str, delim));
 				temp_y = atoi(strtok(NULL,delim));
 
